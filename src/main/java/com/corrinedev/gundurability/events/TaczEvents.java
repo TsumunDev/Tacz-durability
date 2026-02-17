@@ -161,7 +161,12 @@ public class TaczEvents {
 
             if (jamProbability > 0.15 && !tag.getBoolean(WARNING_PLAYED_HANDLE)) {
                 tag.putBoolean(WARNING_PLAYED_HANDLE, true);
-                shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 1.2f, 1.0f);
+                Gundurability.queueServerWork(new Work<>(shooter, 3) {
+                    @Override
+                    public void run() {
+                        shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 2.0f, 0.9f);
+                    }
+                });
             } else if (jamProbability <= 0.05) {
                 tag.putBoolean(WARNING_PLAYED_HANDLE, false);
             }
@@ -203,7 +208,13 @@ public class TaczEvents {
 
         if (RANDOM.nextInt(jamRange + 1) == 0) {
             tag.putBoolean(GunNBTUtil.KEY_JAMMED, true);
-            shooter.playSound(GundurabilityModSounds.JAMSFX.get(), 1.5f, 1.0f);
+            LivingEntity finalShooter = shooter;
+            Gundurability.queueServerWork(new Work<>(shooter, 2) {
+                @Override
+                public void run() {
+                    finalShooter.playSound(GundurabilityModSounds.JAMSFX.get(), 2.5f, 0.8f);
+                }
+            });
 
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_JAMMED, true);
