@@ -511,12 +511,27 @@ public class Config {
         if (biomeId == null) return 1.0;
 
         String biomeLower = biomeId.toLowerCase();
+
+        // Desert biomes
         if (biomeLower.contains("desert")) {
             return DESERT_JAM_MULTIPLIER.get();
-        } else if (biomeLower.contains("river") || biomeLower.contains("lake") || biomeLower.contains("ocean")) {
+        }
+
+        // Water/ocean biomes - includes all ocean variants and coastal areas
+        if (biomeLower.contains("ocean") || biomeLower.contains("deep") ||
+            biomeLower.contains("river") || biomeLower.contains("lake") ||
+            biomeLower.contains("beach") || biomeLower.contains("shore")) {
             return RIVER_JAM_MULTIPLIER.get();
-        } else if (biomeLower.contains("snow") || biomeLower.contains("ice") || biomeLower.contains("frozen")) {
+        }
+
+        // Snow/ice biomes
+        if (biomeLower.contains("snow") || biomeLower.contains("ice") || biomeLower.contains("frozen")) {
             return SNOW_JAM_MULTIPLIER.get();
+        }
+
+        // Swamp biomes - also high humidity
+        if (biomeLower.contains("swamp") || biomeLower.contains("marsh")) {
+            return RIVER_JAM_MULTIPLIER.get() * 0.8;
         }
 
         return 1.0;
