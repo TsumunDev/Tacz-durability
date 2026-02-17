@@ -165,19 +165,16 @@ public class TaczEvents {
 
     private static double getBiomeModifier(LivingEntity shooter) {
         try {
-            // Check if shooter is IN water (submerged) - highest multiplier
             boolean isInWater = shooter.isInWater();
             if (isInWater) {
-                return Config.RIVER_JAM_MULTIPLIER.get() * 1.5; // Extra penalty for being underwater
+                return Config.RIVER_JAM_MULTIPLIER.get() * 1.5;
             }
 
-            // Check if raining - moderate multiplier
-            boolean isRaining = shooter.level().isRaining() && shooter.level().canSeeSky(shooter.blockPosition());
+            boolean isRaining = shooter.level().isRaining();
             if (isRaining) {
-                return Config.SNOW_JAM_MULTIPLIER.get();
+                return Config.RAIN_JAM_MULTIPLIER.get();
             }
 
-            // Check biome
             var biomeKeyOpt = shooter.level().getBiome(shooter.blockPosition()).unwrapKey();
             if (biomeKeyOpt.isPresent()) {
                 String biomeName = biomeKeyOpt.get().location().toString();

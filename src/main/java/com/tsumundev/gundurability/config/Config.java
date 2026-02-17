@@ -56,6 +56,7 @@ public class Config {
     public static final ForgeConfigSpec.ConfigValue<Double> DESERT_JAM_MULTIPLIER;
     public static final ForgeConfigSpec.ConfigValue<Double> RIVER_JAM_MULTIPLIER;
     public static final ForgeConfigSpec.ConfigValue<Double> SNOW_JAM_MULTIPLIER;
+    public static final ForgeConfigSpec.ConfigValue<Double> RAIN_JAM_MULTIPLIER;
 
     // Durabilités par type d'arme
     public static final ForgeConfigSpec.ConfigValue<Integer> PISTOL_DURABILITY;
@@ -115,7 +116,7 @@ public class Config {
 
         JAM_MULTIPLIER_AUTO = BUILDER
                 .comment("Multiplicateur de risque d'enrayage en mode automatique")
-                .defineInRange("auto", 5.0, 1.0, 100.0);
+                .defineInRange("auto", 3.0, 1.0, 100.0);
 
         JAM_MULTIPLIER_BURST = BUILDER
                 .comment("Multiplicateur de risque d'enrayage en mode rafale")
@@ -179,6 +180,10 @@ public class Config {
         RIVER_JAM_MULTIPLIER = BUILDER
                 .comment("Multiplicateur d'enrayage dans l'eau")
                 .defineInRange("river", 4.0, 1.0, 50.0);
+
+        RAIN_JAM_MULTIPLIER = BUILDER
+                .comment("Multiplicateur d'enrayage quand il pleut")
+                .defineInRange("rain", 1.3, 1.0, 10.0);
 
         SNOW_JAM_MULTIPLIER = BUILDER
                 .comment("Multiplicateur d'enrayage dans la neige")
