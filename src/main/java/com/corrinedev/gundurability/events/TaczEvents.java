@@ -164,7 +164,7 @@ public class TaczEvents {
                 Gundurability.queueServerWork(new Work<>(shooter, 3) {
                     @Override
                     public void run() {
-                        shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 2.0f, 0.9f);
+                        shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 3.5f, 0.9f);
                     }
                 });
             } else if (jamProbability <= 0.05) {
@@ -212,7 +212,7 @@ public class TaczEvents {
             Gundurability.queueServerWork(new Work<>(shooter, 2) {
                 @Override
                 public void run() {
-                    finalShooter.playSound(GundurabilityModSounds.JAMSFX.get(), 2.5f, 0.8f);
+                    finalShooter.playSound(GundurabilityModSounds.JAMSFX.get(), 4.0f, 0.8f);
                 }
             });
 
