@@ -498,46 +498,150 @@ public class Config {
     private static Integer getSpecificDurability(String gunId) {
         if (gunId == null) return null;
 
-        // AK series - very reliable
-        if (gunId.contains("ak47") || gunId.contains("ak74") || gunId.contains("akm")) return 1600;
-        // M4/M16 series - decent
-        if (gunId.contains("m4a1")) return 1100;
-        if (gunId.contains("m16")) return 1300;
-        if (gunId.contains("scar")) return 1400;
+        // ===== SHOTGUNS =====
+        // Double barrel - extremely simple, very durable
+        if (gunId.contains("db_") || gunId.contains("double_barrel") || gunId.contains("db700") ||
+            gunId.contains("one_barrel")) return 800;
+        // Sawed off - stress on frame
+        if (gunId.contains("sawed") || gunId.contains("sawn")) return 500;
+        // Remington 870 - workhorse
+        if (gunId.contains("m870") || gunId.contains("remington")) return 700;
+        // SPAS-12 / SPR-15 - complex but sturdy
+        if (gunId.contains("spas") || gunId.contains("spr_")) return 650;
+        // Benelli - modern, reliable
+        if (gunId.contains("benelli")) return 750;
+        // Winchester 1894 / 1887 / 1873 - lever action shotguns/rifles
+        if (gunId.contains("win189") || gunId.contains("win18") || gunId.contains("m1887") ||
+            gunId.contains("win187")) return 750;
+        // M1887_HC - heavy coach variant
+        if (gunId.contains("m1887_hc") || gunId.contains("m1887hc")) return 850;
+
+        // ===== PISTOLS =====
         // Glock - very reliable pistol
         if (gunId.contains("glock")) return 900;
         // 1911 classic
-        if (gunId.contains("1911")) return 750;
+        if (gunId.contains("1911") || gunId.contains("m1911") || gunId.contains("m45a1") ||
+            gunId.contains("sti2011")) return 750;
         // Deagle - heavy but reliable
         if (gunId.contains("deagle")) return 1000;
-        // Double barrel - extremely simple, very durable
-        if (gunId.contains("db_") || gunId.contains("double_barrel")) return 800;
-        // Sawed off - stress on frame
-        if (gunId.contains("sawed")) return 500;
-        // Remington 870 - workhorse
-        if (gunId.contains("m870") || gunId.contains("remington")) return 700;
-        // SPAS-12 - complex but sturdy
-        if (gunId.contains("spas")) return 650;
-        // Benelli - modern, reliable
-        if (gunId.contains("benelli")) return 750;
+        // Beretta / M92FS
+        if (gunId.contains("beretta") || gunId.contains("m92fs") || gunId.contains("92fs")) return 850;
+        // Sig Sauer
+        if (gunId.contains("p226") || gunId.contains("p320") || gunId.contains("sig")) return 850;
+        // USP / HK45
+        if (gunId.contains("usp") || gunId.contains("hk45") || gunId.contains("g40")) return 850;
+        // Hi-Power / Browning
+        if (gunId.contains("hipower") || gunId.contains("browning") || gunId.contains("b92")) return 800;
+        // Five-seveN / FN57
+        if (gunId.contains("five") || gunId.contains("fn57")) return 800;
+        // Makarov / small pistols
+        if (gunId.contains("makarov") || gunId.contains("mp18") || gunId.contains("ppk")) return 700;
+        // Revolvers
+        if (gunId.contains("python") || gunId.contains("colt_python") || gunId.contains("sw_") ||
+            gunId.contains("m1879") || gunId.contains("coltm1851") || gunId.contains("webley") ||
+            gunId.contains("nagant") || gunId.contains("luger") || gunId.contains("tt33")) return 900;
+        // Tec-9 / MAC-10 - cheap SMGs/pistols
+        if (gunId.contains("tec_9") || gunId.contains("tec9") || gunId.contains("mac10")) return 600;
+
+        // ===== SMG =====
         // MP5 - reliable SMG
         if (gunId.contains("mp5")) return 900;
         // Uzi - very reliable
         if (gunId.contains("uzi")) return 1000;
         // P90 - unique design
         if (gunId.contains("p90")) return 1100;
+        // MP7 / MP9 / Vector - modern SMGs
+        if (gunId.contains("mp7") || gunId.contains("mp9") || gunId.contains("vector")) return 950;
+        // M1A1 SMG / Thompson
+        if (gunId.contains("m1a1_smg") || gunId.contains("thompson")) return 1000;
+        // UDP-9 / Skorpion
+        if (gunId.contains("udp") || gunId.contains("skorpion")) return 850;
+        // M1A1 / M1 Carbine
+        if (gunId.contains("m1a1") && !gunId.contains("smg")) return 1100;
+        // PP-2000 / Kedr
+        if (gunId.contains("pp2000") || gunId.contains("kedr") || gunId.contains("bizon")) return 900;
+
+        // ===== RIFLES =====
+        // AK series - very reliable
+        if (gunId.contains("ak47") || gunId.contains("ak74") || gunId.contains("akm") ||
+            gunId.contains("ak12") || gunId.contains("ak_")) return 1600;
+        // M4/M16 series - decent
+        if (gunId.contains("m4a1") || gunId.contains("mk18")) return 1100;
+        if (gunId.contains("m16")) return 1300;
+        if (gunId.contains("scar")) return 1400;
+        // HK416 / HK417
+        if (gunId.contains("hk416") || gunId.contains("hk417")) return 1300;
+        // AUG / FAMAS / G36
+        if (gunId.contains("aug") || gunId.contains("famas") || gunId.contains("g36")) return 1200;
+        // Galil / QBZ
+        if (gunId.contains("galil") || gunId.contains("qbz")) return 1350;
+        // FN FAL
+        if (gunId.contains("fal") || gunId.contains("fn_fal")) return 1400;
+        // SKS - very reliable
+        if (gunId.contains("sks")) return 1500;
+        // M1 Garand / M14 / MK47
+        if (gunId.contains("garand") || gunId.contains("m1garand") || gunId.contains("mk47")) return 1400;
+        // MDR / MDX series
+        if (gunId.contains("mdx") || gunId.contains("mdr")) return 1200;
+        // SKW8
+        if (gunId.contains("skw")) return 1100;
+
+        // ===== SNIPERS =====
         // AWP - precision rifle, fragile
         if (gunId.contains("awp")) return 500;
-        // M700/M24 - bolt actions
+        // M700 / M24 - bolt actions
         if (gunId.contains("m700") || gunId.contains("m24")) return 600;
-        // SVD/PSL - DMR
+        // M700 Swift
+        if (gunId.contains("swift")) return 550;
+        // Kar98k / Mosin / Type 99 - old bolt actions
+        if (gunId.contains("kar98") || gunId.contains("mosin") || gunId.contains("type99") ||
+            gunId.contains("krag")) return 700;
+        // Lee-Enfield / SMLE
+        if (gunId.contains("smle")) return 750;
+        // M1903 / Gew98 / Gras / Lebel - vintage rifles
+        if (gunId.contains("m1903") || gunId.contains("gew98") || gunId.contains("gras") ||
+            gunId.contains("lebel")) return 650;
+        // SVD / Dragunov
         if (gunId.contains("svd")) return 1200;
+        // MRAD ELR - precision
+        if (gunId.contains("mrad")) return 550;
+        // M82A2 - heavy sniper
+        if (gunId.contains("m82")) return 800;
+        // AR50 / Anzio 20mm - anti-materiel
+        if (gunId.contains("ar50") || gunId.contains("anzio")) return 700;
+        // Win1894 as sniper (lever action)
+        if (gunId.contains("win1894") && gunId.contains("sniper")) return 750;
+
+        // ===== LMG / MACHINE GUNS =====
         // M249 SAW - belt fed, sturdy
         if (gunId.contains("m249")) return 3000;
-        // PKM - machine gun
+        // PKM / PKP - machine gun
         if (gunId.contains("pk")) return 3500;
         // RPK - AK variant LMG
         if (gunId.contains("rpk")) return 2500;
+        // M60 / M134 / DP28 / MG42
+        if (gunId.contains("m60") || gunId.contains("minigun") || gunId.contains("dp28") ||
+            gunId.contains("mg14") || gunId.contains("madsen")) return 3000;
+        // MG34 / MG42
+        if (gunId.contains("mg34") || gunId.contains("mg42")) return 2800;
+        // Negev / NGSW
+        if (gunId.contains("negev") || gunId.contains("ngsw")) return 3200;
+
+        // ===== DMR =====
+        // SR25 / MK14 / G3 / HK417 DMRs
+        if (gunId.contains("sr25") || gunId.contains("mk14") || gunId.contains("g3")) return 1400;
+        // SCAR MK20
+        if (gunId.contains("mk20")) return 1500;
+
+        // ===== SPECIAL / OTHER =====
+        // Grenade launchers
+        if (gunId.contains("mgl") || gunId.contains("grenade") || gunId.contains("rpg")) return 1200;
+        // Flare gun
+        if (gunId.contains("flare")) return 500;
+        // Boombox / meme weapons
+        if (gunId.contains("boombox") || gunId.contains("nitemare")) return 400;
+        // Diddy / joke weapons
+        if (gunId.contains("diddy") || gunId.contains("omen")) return 600;
 
         return null;
     }
