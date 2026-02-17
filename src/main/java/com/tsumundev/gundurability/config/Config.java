@@ -195,31 +195,31 @@ public class Config {
 
         PISTOL_DURABILITY = BUILDER
                 .comment("Pistolets (Glock, 1911, etc.)")
-                .defineInRange("pistol", 600, 100, 10000);
+                .defineInRange("pistol", 800, 100, 10000);
 
         SMG_DURABILITY = BUILDER
                 .comment("SMG (MP5, Uzi, etc.)")
-                .defineInRange("smg", 800, 100, 10000);
+                .defineInRange("smg", 1000, 100, 10000);
 
         RIFLE_DURABILITY = BUILDER
                 .comment("Fusils d'assaut (AK, M4, etc.)")
-                .defineInRange("rifle", 1000, 100, 10000);
+                .defineInRange("rifle", 1200, 100, 10000);
 
         SNIPER_DURABILITY = BUILDER
                 .comment("Snipers (mécanismes précis = fragiles)")
-                .defineInRange("sniper", 500, 100, 10000);
+                .defineInRange("sniper", 600, 100, 10000);
 
         SHOTGUN_DURABILITY = BUILDER
-                .comment("Fusils à pompe (stress mécanique élevé)")
-                .defineInRange("shotgun", 400, 100, 10000);
+                .comment("Fusils à pompe (stress mécanique élevé mais plus solides)")
+                .defineInRange("shotgun", 600, 100, 10000);
 
         LMG_DURABILITY = BUILDER
                 .comment("Mitrailleuses (très robustes)")
-                .defineInRange("lmg", 2000, 100, 20000);
+                .defineInRange("lmg", 2500, 100, 20000);
 
         DMR_DURABILITY = BUILDER
                 .comment("DMR (entre rifle et sniper)")
-                .defineInRange("dmr", 1200, 100, 10000);
+                .defineInRange("dmr", 1400, 100, 10000);
 
         BUILDER.pop();
         BUILDER.pop();
@@ -346,28 +346,47 @@ public class Config {
     private static String extractGunTypeOptimized(String gunId) {
         if (gunId == null) return null;
 
-        // Optimisation: utiliser regionMatches (case-insensitive) au lieu de toLowerCase
-        // Évite l'allocation d'une nouvelle String
-        if (containsIgnoreCase(gunId, "glock") || containsIgnoreCase(gunId, "1911") ||
-            containsIgnoreCase(gunId, "p226") || containsIgnoreCase(gunId, "usp")) return "pistol";
-
-        if (containsIgnoreCase(gunId, "mp5") || containsIgnoreCase(gunId, "uzi") ||
-            containsIgnoreCase(gunId, "p90") || containsIgnoreCase(gunId, "vector")) return "smg";
-
-        if (containsIgnoreCase(gunId, "ak") || containsIgnoreCase(gunId, "m4") ||
-            containsIgnoreCase(gunId, "m16") || containsIgnoreCase(gunId, "scar")) return "rifle";
-
-        if (containsIgnoreCase(gunId, "awp") || containsIgnoreCase(gunId, "m700") ||
-            containsIgnoreCase(gunId, "m24")) return "sniper";
-
+        // Shotguns (check first - common names)
         if (containsIgnoreCase(gunId, "m870") || containsIgnoreCase(gunId, "spas") ||
-            containsIgnoreCase(gunId, "benelli")) return "shotgun";
+            containsIgnoreCase(gunId, "benelli") || containsIgnoreCase(gunId, "db_") ||
+            containsIgnoreCase(gunId, "double") || containsIgnoreCase(gunId, "sawed") ||
+            containsIgnoreCase(gunId, "remington") || containsIgnoreCase(gunId, "shotgun") ||
+            containsIgnoreCase(gunId, "dp12") || containsIgnoreCase(gunId, "short") ||
+            containsIgnoreCase(gunId, "long")) return "shotgun";
 
+        // Pistols
+        if (containsIgnoreCase(gunId, "glock") || containsIgnoreCase(gunId, "1911") ||
+            containsIgnoreCase(gunId, "p226") || containsIgnoreCase(gunId, "usp") ||
+            containsIgnoreCase(gunId, "deagle") || containsIgnoreCase(gunId, "beretta") ||
+            containsIgnoreCase(gunId, "pistol")) return "pistol";
+
+        // SMG
+        if (containsIgnoreCase(gunId, "mp5") || containsIgnoreCase(gunId, "uzi") ||
+            containsIgnoreCase(gunId, "p90") || containsIgnoreCase(gunId, "vector") ||
+            containsIgnoreCase(gunId, "mp7") || containsIgnoreCase(gunId, "mp9") ||
+            containsIgnoreCase(gunId, "mac") || containsIgnoreCase(gunId, "smg")) return "smg";
+
+        // Rifles
+        if (containsIgnoreCase(gunId, "ak") || containsIgnoreCase(gunId, "m4") ||
+            containsIgnoreCase(gunId, "m16") || containsIgnoreCase(gunId, "scar") ||
+            containsIgnoreCase(gunId, "aug") || containsIgnoreCase(gunId, "famas") ||
+            containsIgnoreCase(gunId, "galil") || containsIgnoreCase(gunId, "qbz")) return "rifle";
+
+        // Snipers
+        if (containsIgnoreCase(gunId, "awp") || containsIgnoreCase(gunId, "m700") ||
+            containsIgnoreCase(gunId, "m24") || containsIgnoreCase(gunId, "m98") ||
+            containsIgnoreCase(gunId, "svd") || containsIgnoreCase(gunId, "kar98") ||
+            containsIgnoreCase(gunId, "mosin")) return "sniper";
+
+        // LMG
         if (containsIgnoreCase(gunId, "m249") || containsIgnoreCase(gunId, "mg") ||
-            containsIgnoreCase(gunId, "pk")) return "lmg";
+            containsIgnoreCase(gunId, "pk") || containsIgnoreCase(gunId, "rpk") ||
+            containsIgnoreCase(gunId, "negev") || containsIgnoreCase(gunId, "lmg")) return "lmg";
 
+        // DMR
         if (containsIgnoreCase(gunId, "dmr") || containsIgnoreCase(gunId, "sr") ||
-            containsIgnoreCase(gunId, "hk417")) return "dmr";
+            containsIgnoreCase(gunId, "hk417") || containsIgnoreCase(gunId, "sr25") ||
+            containsIgnoreCase(gunId, "mk14") || containsIgnoreCase(gunId, "g3")) return "dmr";
 
         return null;
     }
@@ -479,15 +498,46 @@ public class Config {
     private static Integer getSpecificDurability(String gunId) {
         if (gunId == null) return null;
 
-        // AK47 est particulièrement robuste
-        if (gunId.contains("ak47")) return 1500;
-        // M4 est moins fiable
-        if (gunId.contains("m4a1")) return 900;
-        if (gunId.contains("m16")) return 1100;
-        // Glock réputé fiable
-        if (gunId.contains("glock")) return 700;
-        // 1911 classique
-        if (gunId.contains("1911")) return 650;
+        // AK series - very reliable
+        if (gunId.contains("ak47") || gunId.contains("ak74") || gunId.contains("akm")) return 1600;
+        // M4/M16 series - decent
+        if (gunId.contains("m4a1")) return 1100;
+        if (gunId.contains("m16")) return 1300;
+        if (gunId.contains("scar")) return 1400;
+        // Glock - very reliable pistol
+        if (gunId.contains("glock")) return 900;
+        // 1911 classic
+        if (gunId.contains("1911")) return 750;
+        // Deagle - heavy but reliable
+        if (gunId.contains("deagle")) return 1000;
+        // Double barrel - extremely simple, very durable
+        if (gunId.contains("db_") || gunId.contains("double_barrel")) return 800;
+        // Sawed off - stress on frame
+        if (gunId.contains("sawed")) return 500;
+        // Remington 870 - workhorse
+        if (gunId.contains("m870") || gunId.contains("remington")) return 700;
+        // SPAS-12 - complex but sturdy
+        if (gunId.contains("spas")) return 650;
+        // Benelli - modern, reliable
+        if (gunId.contains("benelli")) return 750;
+        // MP5 - reliable SMG
+        if (gunId.contains("mp5")) return 900;
+        // Uzi - very reliable
+        if (gunId.contains("uzi")) return 1000;
+        // P90 - unique design
+        if (gunId.contains("p90")) return 1100;
+        // AWP - precision rifle, fragile
+        if (gunId.contains("awp")) return 500;
+        // M700/M24 - bolt actions
+        if (gunId.contains("m700") || gunId.contains("m24")) return 600;
+        // SVD/PSL - DMR
+        if (gunId.contains("svd")) return 1200;
+        // M249 SAW - belt fed, sturdy
+        if (gunId.contains("m249")) return 3000;
+        // PKM - machine gun
+        if (gunId.contains("pk")) return 3500;
+        // RPK - AK variant LMG
+        if (gunId.contains("rpk")) return 2500;
 
         return null;
     }
