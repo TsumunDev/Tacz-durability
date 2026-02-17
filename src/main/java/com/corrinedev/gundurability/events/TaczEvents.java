@@ -1,6 +1,5 @@
 package com.corrinedev.gundurability.events;
 
-
 import com.corrinedev.gundurability.Gundurability;
 import com.corrinedev.gundurability.config.Config;
 import com.corrinedev.gundurability.init.GundurabilityModGameRules;
@@ -13,14 +12,18 @@ import com.tacz.guns.item.ModernKineticGunItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 @Mod.EventBusSubscriber
 public class TaczEvents {
@@ -28,11 +31,28 @@ public class TaczEvents {
 
     private static final Component MSG_JAMMED = Component.literal("Enrayée !")
             .withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
-    private static final Component MSG_GUN_BROKE = Component.literal("Votre arme s'est cassée")
+    private static final Component MSG_GUN_BROKE = Component.literal("Votre arme s'est cassee")
             .withStyle(ChatFormatting.BOLD, ChatFormatting.RED);
 
-    private static final String UNJAMMING_HANDLE = "gundurability$handlingJamming";
-    private static final String WARNING_PLAYED_HANDLE = "gundurability$warningPlayed";
+    private static final String UNJAMMING_HANDLE = "gundurability$hj";
+    private static final String WARNING_PLAYED_HANDLE = "gundurability$wp";
+
+    private static final SoundEvent JAM_SOUND;
+    private static final SoundEvent WARNING_SOUND;
+    private static final SoundEvent ITEM_BREAK_SOUND;
+
+    private static final float JAM_VOLUME = 4.0f;
+    private static final float WARNING_VOLUME = 3.5f;
+    private static final float JAM_PITCH = 0.8f;
+    private static final float WARNING_PITCH = 0.9f;
+
+    private static final Queue<DelayedSound> DELAYED_SOUNDS = new ArrayDeque<>();
+
+    static {
+        JAM_SOUND = GundurabilityModSounds.JAMSFX.get();
+        WARNING_SOUND = GundurabilityModSounds.JAM_WARNING.get();
+        ITEM_BREAK_SOUND = SoundEvents.ITEM_BREAK;
+    }
 
     @SubscribeEvent
     public static void onShootEvent(GunFireEvent event) {
@@ -43,10 +63,28 @@ public class TaczEvents {
         }
     }
 
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            processDelayedSounds();
+        }
+    }
+
+    private static void processDelayedSounds() {
+        while (!DELAYED_SOUNDS.isEmpty()) {
+            DelayedSound delayed = DELAYED_SOUNDS.peek();
+            if (delayed.tick()) {
+                delayed.play();
+                DELAYED_SOUNDS.poll();
+            } else {
+                break;
+            }
+        }
+    }
+
     private static void handleServerSide(GunFireEvent event) {
         LivingEntity shooter = event.getShooter();
         ItemStack gunStack = event.getGunItemStack();
-
         CompoundTag tag = gunStack.getOrCreateTag();
 
         if (!(shooter instanceof Player) && tag.getBoolean(GunNBTUtil.KEY_JAMMED)) {
@@ -62,10 +100,10 @@ public class TaczEvents {
             currentDurability = maxDur;
         }
 
-        handleDurabilityLogicOptimized(event, shooter, gunStack, tag, currentDurability);
+        handleDurabilityLogic(event, shooter, gunStack, tag, currentDurability);
     }
 
-    private static void handleDurabilityLogicOptimized(GunFireEvent event, LivingEntity shooter,
+    private static void handleDurabilityLogic(GunFireEvent event, LivingEntity shooter,
             ItemStack gunStack, CompoundTag tag, int currentDurability) {
 
         if (tag.getBoolean(GunNBTUtil.KEY_JAMMED) || currentDurability <= 0) {
@@ -74,122 +112,15 @@ public class TaczEvents {
         }
 
         String gunId = tag.getString(GunNBTUtil.KEY_GUN_ID);
+        FireModeData modeData = extractFireModeData(tag);
 
-        float totalModifier = calculateTotalModifier(gunId, shooter);
+        int newDurability = applyDurabilityDamage(currentDurability, gunId, shooter, tag, modeData);
 
-        int newDurability = applyDurabilityDamage(currentDurability, totalModifier, gunStack, tag);
-
-        currentDurability = newDurability;
-
-        checkJamWarning(shooter, gunStack, tag, currentDurability, gunId);
-        checkAndApplyJam(shooter, gunStack, tag, currentDurability, gunId);
+        checkJamWarning(shooter, tag, newDurability, gunId, modeData);
+        checkAndApplyJam(shooter, tag, newDurability, gunId, modeData);
     }
 
-    private static float calculateTotalModifier(String gunId, LivingEntity shooter) {
-        float gunModifier = 1.0f;
-        Config.DurabilityModifier durabilityModifier = Config.getDurabilityModifier(gunId);
-        if (durabilityModifier != null) {
-            gunModifier = durabilityModifier.jamMultiplier();
-        }
-
-        float biomeModifier = getBiomeModifierOptimized(shooter);
-
-        return gunModifier * biomeModifier;
-    }
-
-    private static float getBiomeModifierOptimized(LivingEntity shooter) {
-        try {
-            var biomeKeyOpt = shooter.level().getBiome(shooter.blockPosition()).unwrapKey();
-            if (biomeKeyOpt.isPresent()) {
-                String biomeName = biomeKeyOpt.get().location().toString();
-                return (float) Config.getBiomeJamMultiplier(biomeName);
-            }
-        } catch (Exception e) {
-        }
-        return 1.0f;
-    }
-
-    private static int applyDurabilityDamage(int currentDurability, float totalModifier,
-            ItemStack gunStack, CompoundTag tag) {
-
-        boolean isBurst = tag.getBoolean("Burst");
-        boolean isAuto = tag.getBoolean("Auto");
-
-        float damage;
-        if (isAuto) {
-            damage = GunDurabilityConstants.SINGLE_SHOT_MULTIPLIER;
-        } else if (isBurst) {
-            damage = GunDurabilityConstants.BURST_MODE_MULTIPLIER;
-        } else {
-            damage = GunDurabilityConstants.SINGLE_SHOT_MULTIPLIER;
-        }
-
-        int newDurability = currentDurability - Math.round(damage * totalModifier);
-        newDurability = Math.max(0, newDurability);
-
-        tag.putInt(GunNBTUtil.KEY_DURABILITY, newDurability);
-
-        return newDurability;
-    }
-
-    private static void checkJamWarning(LivingEntity shooter, ItemStack gunStack,
-            CompoundTag tag, int currentDurability, String gunId) {
-
-        if (!Config.isUnjammable(gunId) && Config.JAMCHANCE.get() > 0) {
-            int maxDurability = tag.getInt("MaxDurability");
-            if (maxDurability == 0) {
-                maxDurability = Config.getDurability(gunId);
-            }
-
-            double durabilityMultiplier = Config.calculateJamChanceMultiplier(currentDurability, maxDurability);
-
-            boolean isAuto = tag.getBoolean("Auto");
-            boolean isBurst = tag.getBoolean("Burst");
-            double fireModeMultiplier;
-            if (isAuto) {
-                fireModeMultiplier = Config.JAM_MULTIPLIER_AUTO.get();
-            } else if (isBurst) {
-                fireModeMultiplier = Config.JAM_MULTIPLIER_BURST.get();
-            } else {
-                fireModeMultiplier = Config.JAM_MULTIPLIER_SEMI.get();
-            }
-
-            double biomeMultiplier = getBiomeModifierOptimized(shooter);
-            double totalMultiplier = durabilityMultiplier * fireModeMultiplier * biomeMultiplier;
-
-            double jamProbability = (Config.JAMCHANCE.get() * totalMultiplier) / maxDurability;
-
-            if (jamProbability > 0.15 && !tag.getBoolean(WARNING_PLAYED_HANDLE)) {
-                tag.putBoolean(WARNING_PLAYED_HANDLE, true);
-                Gundurability.queueServerWork(new Work<>(shooter, 3) {
-                    @Override
-                    public void run() {
-                        shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 3.5f, 0.9f);
-                    }
-                });
-            } else if (jamProbability <= 0.05) {
-                tag.putBoolean(WARNING_PLAYED_HANDLE, false);
-            }
-        }
-    }
-
-    private static void checkAndApplyJam(LivingEntity shooter, ItemStack gunStack,
-            CompoundTag tag, int currentDurability, String gunId) {
-
-        boolean allowJam = !Config.isUnjammable(gunId);
-
-        if (!allowJam || Config.JAMCHANCE.get() == 0) {
-            return;
-        }
-
-        int maxDurability = tag.getInt("MaxDurability");
-        if (maxDurability == 0) {
-            maxDurability = Config.getDurability(gunId);
-            tag.putInt("MaxDurability", maxDurability);
-        }
-
-        double durabilityMultiplier = Config.calculateJamChanceMultiplier(currentDurability, maxDurability);
-
+    private static FireModeData extractFireModeData(CompoundTag tag) {
         boolean isAuto = tag.getBoolean("Auto");
         boolean isBurst = tag.getBoolean("Burst");
         double fireModeMultiplier;
@@ -200,21 +131,102 @@ public class TaczEvents {
         } else {
             fireModeMultiplier = Config.JAM_MULTIPLIER_SEMI.get();
         }
+        return new FireModeData(isAuto, isBurst, fireModeMultiplier);
+    }
 
-        double biomeMultiplier = getBiomeModifierOptimized(shooter);
+    private static int applyDurabilityDamage(int currentDurability, String gunId, LivingEntity shooter,
+            CompoundTag tag, FireModeData modeData) {
 
-        double totalMultiplier = durabilityMultiplier * fireModeMultiplier * biomeMultiplier;
-        int jamRange = Math.max(1, (int) Math.round((double) maxDurability / (Config.JAMCHANCE.get() * totalMultiplier)));
+        float gunModifier = 1.0f;
+        Config.DurabilityModifier durabilityModifier = Config.getDurabilityModifier(gunId);
+        if (durabilityModifier != null) {
+            gunModifier = durabilityModifier.jamMultiplier();
+        }
+
+        double biomeModifier = getBiomeModifier(shooter);
+        double totalModifier = gunModifier * biomeModifier;
+
+        float damage;
+        if (modeData.isAuto) {
+            damage = GunDurabilityConstants.SINGLE_SHOT_MULTIPLIER;
+        } else if (modeData.isBurst) {
+            damage = GunDurabilityConstants.BURST_MODE_MULTIPLIER;
+        } else {
+            damage = GunDurabilityConstants.SINGLE_SHOT_MULTIPLIER;
+        }
+
+        int newDurability = currentDurability - (int) Math.round(damage * totalModifier);
+        newDurability = Math.max(0, newDurability);
+
+        tag.putInt(GunNBTUtil.KEY_DURABILITY, newDurability);
+
+        return newDurability;
+    }
+
+    private static double getBiomeModifier(LivingEntity shooter) {
+        try {
+            var biomeKeyOpt = shooter.level().getBiome(shooter.blockPosition()).unwrapKey();
+            if (biomeKeyOpt.isPresent()) {
+                String biomeName = biomeKeyOpt.get().location().toString();
+                return Config.getBiomeJamMultiplier(biomeName);
+            }
+        } catch (Exception ignored) {
+        }
+        return 1.0;
+    }
+
+    private static void checkJamWarning(LivingEntity shooter, CompoundTag tag, int currentDurability,
+            String gunId, FireModeData modeData) {
+
+        if (Config.isUnjammable(gunId) || Config.JAMCHANCE.get() == 0) {
+            return;
+        }
+
+        if (tag.getBoolean(WARNING_PLAYED_HANDLE)) {
+            return;
+        }
+
+        int maxDurability = tag.getInt("MaxDurability");
+        if (maxDurability == 0) {
+            maxDurability = Config.getDurability(gunId);
+        }
+
+        double durabilityMultiplier = Config.calculateJamChanceMultiplier(currentDurability, maxDurability);
+        double biomeMod = getBiomeModifier(shooter);
+        double totalMultiplier = durabilityMultiplier * modeData.fireModeMultiplier * biomeMod;
+
+        double jamProbability = (Config.JAMCHANCE.get() * totalMultiplier) / maxDurability;
+
+        if (jamProbability > 0.15) {
+            tag.putBoolean(WARNING_PLAYED_HANDLE, true);
+            DELAYED_SOUNDS.add(new DelayedSound(shooter, 3, true));
+        } else if (jamProbability <= 0.05) {
+            tag.putBoolean(WARNING_PLAYED_HANDLE, false);
+        }
+    }
+
+    private static void checkAndApplyJam(LivingEntity shooter, CompoundTag tag, int currentDurability,
+            String gunId, FireModeData modeData) {
+
+        if (Config.isUnjammable(gunId) || Config.JAMCHANCE.get() == 0) {
+            return;
+        }
+
+        int maxDurability = tag.getInt("MaxDurability");
+        if (maxDurability == 0) {
+            maxDurability = Config.getDurability(gunId);
+            tag.putInt("MaxDurability", maxDurability);
+        }
+
+        double durabilityMultiplier = Config.calculateJamChanceMultiplier(currentDurability, maxDurability);
+        double biomeMod = getBiomeModifier(shooter);
+        double totalMultiplier = durabilityMultiplier * modeData.fireModeMultiplier * biomeMod;
+
+        int jamRange = Math.max(1, (int) Math.round(maxDurability / (Config.JAMCHANCE.get() * totalMultiplier)));
 
         if (RANDOM.nextInt(jamRange + 1) == 0) {
             tag.putBoolean(GunNBTUtil.KEY_JAMMED, true);
-            LivingEntity finalShooter = shooter;
-            Gundurability.queueServerWork(new Work<>(shooter, 2) {
-                @Override
-                public void run() {
-                    finalShooter.playSound(GundurabilityModSounds.JAMSFX.get(), 4.0f, 0.8f);
-                }
-            });
+            DELAYED_SOUNDS.add(new DelayedSound(shooter, 2, false));
 
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_JAMMED, true);
@@ -226,7 +238,7 @@ public class TaczEvents {
 
         if (shouldBreak && currentDurability <= 0) {
             shooter.getMainHandItem().setCount(0);
-            shooter.playSound(SoundEvents.ITEM_BREAK);
+            shooter.playSound(ITEM_BREAK_SOUND);
 
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_GUN_BROKE, true);
@@ -243,7 +255,7 @@ public class TaczEvents {
 
         if (shouldBreak && isBroken) {
             shooter.getMainHandItem().setCount(0);
-            shooter.playSound(SoundEvents.ITEM_BREAK);
+            shooter.playSound(ITEM_BREAK_SOUND);
 
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_GUN_BROKE, true);
@@ -304,13 +316,47 @@ public class TaczEvents {
         });
     }
 
-    private static int getJamTimeForGun(ItemStack gunStack) {
-        String gunId = gunStack.getOrCreateTag().getString(GunNBTUtil.KEY_GUN_ID);
-        return getJamTimeForGunId(gunId);
-    }
-
     private static int getJamTimeForGunId(String gunId) {
         Config.DurabilityModifier modifier = Config.getDurabilityModifier(gunId);
         return (modifier != null) ? modifier.jamTime() : GunDurabilityConstants.DEFAULT_UNJAM_TIME_TICKS;
+    }
+
+    private static final class FireModeData {
+        final boolean isAuto;
+        final boolean isBurst;
+        final double fireModeMultiplier;
+
+        FireModeData(boolean isAuto, boolean isBurst, double fireModeMultiplier) {
+            this.isAuto = isAuto;
+            this.isBurst = isBurst;
+            this.fireModeMultiplier = fireModeMultiplier;
+        }
+    }
+
+    private static final class DelayedSound {
+        private final LivingEntity shooter;
+        private final boolean isWarning;
+        private int ticks;
+
+        DelayedSound(LivingEntity shooter, int ticks, boolean isWarning) {
+            this.shooter = shooter;
+            this.ticks = ticks;
+            this.isWarning = isWarning;
+        }
+
+        boolean tick() {
+            ticks--;
+            return ticks <= 0;
+        }
+
+        void play() {
+            if (!shooter.isAlive()) return;
+
+            if (isWarning) {
+                shooter.playSound(WARNING_SOUND, WARNING_VOLUME, WARNING_PITCH);
+            } else {
+                shooter.playSound(JAM_SOUND, JAM_VOLUME, JAM_PITCH);
+            }
+        }
     }
 }
