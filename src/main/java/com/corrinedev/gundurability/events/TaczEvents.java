@@ -161,7 +161,7 @@ public class TaczEvents {
 
             if (jamProbability > 0.15 && !tag.getBoolean(WARNING_PLAYED_HANDLE)) {
                 tag.putBoolean(WARNING_PLAYED_HANDLE, true);
-                shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 0.6f, 1.0f);
+                shooter.playSound(GundurabilityModSounds.JAM_WARNING.get(), 1.2f, 1.0f);
             } else if (jamProbability <= 0.05) {
                 tag.putBoolean(WARNING_PLAYED_HANDLE, false);
             }
@@ -203,7 +203,7 @@ public class TaczEvents {
 
         if (RANDOM.nextInt(jamRange + 1) == 0) {
             tag.putBoolean(GunNBTUtil.KEY_JAMMED, true);
-            shooter.playSound(GundurabilityModSounds.JAMSFX.get());
+            shooter.playSound(GundurabilityModSounds.JAMSFX.get(), 1.5f, 1.0f);
 
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_JAMMED, true);
