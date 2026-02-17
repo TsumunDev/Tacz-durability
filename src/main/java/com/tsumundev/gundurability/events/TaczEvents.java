@@ -37,9 +37,7 @@ public class TaczEvents {
     private static final String UNJAMMING_HANDLE = "gundurability$hj";
     private static final String WARNING_PLAYED_HANDLE = "gundurability$wp";
 
-    private static final SoundEvent JAM_SOUND;
-    private static final SoundEvent WARNING_SOUND;
-    private static final SoundEvent ITEM_BREAK_SOUND;
+    private static final SoundEvent ITEM_BREAK_SOUND = SoundEvents.ITEM_BREAK;
 
     private static final float JAM_VOLUME = 4.0f;
     private static final float WARNING_VOLUME = 3.5f;
@@ -48,10 +46,12 @@ public class TaczEvents {
 
     private static final Queue<DelayedSound> DELAYED_SOUNDS = new ArrayDeque<>();
 
-    static {
-        JAM_SOUND = GundurabilityModSounds.JAMSFX.get();
-        WARNING_SOUND = GundurabilityModSounds.JAM_WARNING.get();
-        ITEM_BREAK_SOUND = SoundEvents.ITEM_BREAK;
+    private static SoundEvent getJamSound() {
+        return GundurabilityModSounds.JAMSFX.get();
+    }
+
+    private static SoundEvent getWarningSound() {
+        return GundurabilityModSounds.JAM_WARNING.get();
     }
 
     @SubscribeEvent
@@ -353,9 +353,9 @@ public class TaczEvents {
             if (!shooter.isAlive()) return;
 
             if (isWarning) {
-                shooter.playSound(WARNING_SOUND, WARNING_VOLUME, WARNING_PITCH);
+                shooter.playSound(getWarningSound(), WARNING_VOLUME, WARNING_PITCH);
             } else {
-                shooter.playSound(JAM_SOUND, JAM_VOLUME, JAM_PITCH);
+                shooter.playSound(getJamSound(), JAM_VOLUME, JAM_PITCH);
             }
         }
     }
