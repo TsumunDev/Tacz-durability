@@ -33,6 +33,8 @@ public class TaczDurabilityAdminCommands {
             .then(jam())
             .then(clearjam())
             .then(reload())
+            .then(restore())
+            .then(listGuns())
 
             .then(Commands.literal("debug")
                 .then(Commands.literal("jam")
@@ -119,6 +121,26 @@ public class TaczDurabilityAdminCommands {
     private static LiteralArgumentBuilder<CommandSourceStack> reload() {
         return Commands.literal("reload")
             .executes(ctx -> reloadConfigs(ctx.getSource()));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> restore() {
+        return Commands.literal("restore")
+            .then(Commands.argument("player", EntityArgument.player())
+                .executes(ctx -> {
+                    ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+                    return restore(ctx.getSource(), target);
+                })
+            );
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> listGuns() {
+        return Commands.literal("list")
+            .then(Commands.argument("player", EntityArgument.player())
+                .executes(ctx -> {
+                    ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+                    return listGuns(ctx.getSource(), target);
+                })
+            );
     }
 
     private static int setDurability(CommandSourceStack source, Player target, int amount) {
@@ -236,8 +258,11 @@ public class TaczDurabilityAdminCommands {
         }
 
         if (!GunNBTUtil.hasDurability(heldItem)) {
-            source.sendFailure(Component.literal("§cL'arme n'a pas de donnée de durabilité."));
-            return 0;
+            String gunId = GunNBTUtil.getGunId(heldItem);
+            int maxDurability = (gunId != null && !gunId.isEmpty())
+                ? Config.getDurability(gunId)
+                : Config.DEFAULT_MAX_DURABILITY.get();
+            GunNBTUtil.setDurability(heldItem, maxDurability);
         }
 
         int before = GunNBTUtil.getDurability(heldItem);
@@ -249,6 +274,8 @@ public class TaczDurabilityAdminCommands {
             GunNBTUtil.repair(heldItem, amount);
         }
 
+        GunNBTUtil.unjam(heldItem);
+
         int after = GunNBTUtil.getDurability(heldItem);
         int repaired = after - before;
 
@@ -256,9 +283,9 @@ public class TaczDurabilityAdminCommands {
         String gunName = (gunId != null && !gunId.isEmpty()) ? gunId : "arme inconnue";
 
         if (amount < 0) {
-            source.sendSuccess(() -> Component.literal("§aArme §e" + gunName + " §aréparée complètement pour §e" + target.getName().getString()), true);
+            source.sendSuccess(() -> Component.literal("§aArme §e" + gunName + " §aréparée complètement et désenrayée pour §e" + target.getName().getString()), true);
         } else {
-            source.sendSuccess(() -> Component.literal("§aArme §e" + gunName + " §aréparée de §e" + repaired + " §apour §e" + target.getName().getString()), true);
+            source.sendSuccess(() -> Component.literal("§aArme §e" + gunName + " §aréparée de §e" + repaired + " §aet désenrayée pour §e" + target.getName().getString()), true);
         }
 
         return 1;
@@ -399,5 +426,75 @@ public class TaczDurabilityAdminCommands {
         source.sendSuccess(() -> Component.literal("§a[Debug] " + finalJammedCount + " arme(s) enrayée(s) dans l'inventaire."), true);
 
         return jammedCount;
+    }
+
+    private static int restore(CommandSourceStack source, Player target) {
+        ItemStack heldItem = target.getMainHandItem();
+
+        if (!(heldItem.getItem() instanceof ModernKineticGunItem)) {
+            source.sendFailure(Component.literal("§c" + target.getName().getString() + " ne tient pas d'arme TACZ en main."));
+            return 0;
+        }
+
+        String gunId = GunNBTUtil.getGunId(heldItem);
+        int maxDurability = (gunId != null && !gunId.isEmpty())
+            ? Config.getDurability(gunId)
+            : Config.DEFAULT_MAX_DURABILITY.get();
+
+        GunNBTUtil.setDurability(heldItem, maxDurability);
+        GunNBTUtil.unjam(heldItem);
+
+        String gunName = (gunId != null && !gunId.isEmpty()) ? gunId : "arme inconnue";
+        source.sendSuccess(() -> Component.literal("§aArme §e" + gunName + " §arestaurée à 100% pour §e" + target.getName().getString()), true);
+        return 1;
+    }
+
+    private static int listGuns(CommandSourceStack source, Player target) {
+        source.sendSuccess(() -> Component.literal("§6=== Armes TACZ de " + target.getName().getString() + " ==="), false);
+
+        int count = 0;
+        for (ItemStack item : target.getInventory().items) {
+            if (item.getItem() instanceof ModernKineticGunItem) {
+                String gunId = GunNBTUtil.getGunId(item);
+                String gunName = (gunId != null && !gunId.isEmpty()) ? gunId : "arme inconnue";
+
+                if (GunNBTUtil.hasDurability(item)) {
+                    int current = GunNBTUtil.getDurability(item);
+                    int max = GunNBTUtil.getMaxDurability(item);
+                    double percent = GunNBTUtil.getDurabilityPercent(item) * 100;
+                    String jammed = GunNBTUtil.isJammed(item) ? " §c[ENRAYÉE]" : "";
+                    source.sendSuccess(() -> Component.literal("§e" + gunName + "§f: " + current + "/" + + max + " (" + String.format("%.0f%%", percent) + ")" + jammed), false);
+                } else {
+                    source.sendSuccess(() -> Component.literal("§e" + gunName + "§7: (pas de durabilité)"), false);
+                }
+                count++;
+            }
+        }
+
+        ItemStack offhandItem = target.getOffhandItem();
+        if (offhandItem.getItem() instanceof ModernKineticGunItem) {
+            String gunId = GunNBTUtil.getGunId(offhandItem);
+            String gunName = (gunId != null && !gunId.isEmpty()) ? gunId : "arme inconnue";
+
+            if (GunNBTUtil.hasDurability(offhandItem)) {
+                int current = GunNBTUtil.getDurability(offhandItem);
+                int max = GunNBTUtil.getMaxDurability(offhandItem);
+                double percent = GunNBTUtil.getDurabilityPercent(offhandItem) * 100;
+                String jammed = GunNBTUtil.isJammed(offhandItem) ? " §c[ENRAYÉE]" : "";
+                source.sendSuccess(() -> Component.literal("§e" + gunName + " §7(main secondaire)§f: " + current + "/" + max + " (" + String.format("%.0f%%", percent) + ")" + jammed), false);
+            } else {
+                source.sendSuccess(() -> Component.literal("§e" + gunName + " §7(main secondaire)§7: (pas de durabilité)"), false);
+            }
+            count++;
+        }
+
+        if (count == 0) {
+            source.sendSuccess(() -> Component.literal("§7Aucune arme TACZ trouvée."), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("§7Total: §e" + count + " §7arme(s)"), false);
+        }
+
+        source.sendSuccess(() -> Component.literal("§6================================="), false);
+        return 1;
     }
 }
