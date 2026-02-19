@@ -42,6 +42,10 @@ public class Gundurability {
     public static final String MODID = "gundurability";
     public static final Logger LOGGER = LogUtils.getLogger();
 
+    public static ResourceLocation id(String path) {
+        return new ResourceLocation(MODID, path);
+    }
+
     private static final List<Consumer<ModConfig>> CONFIG_RELOAD_LISTENERS = new ArrayList<>();
 
     public Gundurability() {

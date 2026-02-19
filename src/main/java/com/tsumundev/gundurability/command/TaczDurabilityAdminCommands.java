@@ -488,10 +488,11 @@ public class TaczDurabilityAdminCommands {
             count++;
         }
 
-        if (count == 0) {
+        final int finalCount = count;
+        if (finalCount == 0) {
             source.sendSuccess(() -> Component.literal("§7Aucune arme TACZ trouvée."), false);
         } else {
-            source.sendSuccess(() -> Component.literal("§7Total: §e" + count + " §7arme(s)"), false);
+            source.sendSuccess(() -> Component.literal("§7Total: §e" + finalCount + " §7arme(s)"), false);
         }
 
         source.sendSuccess(() -> Component.literal("§6================================="), false);
