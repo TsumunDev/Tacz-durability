@@ -1,8 +1,11 @@
 package com.tsumundev.gundurability.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.tsumundev.gundurability.config.Config;
+import com.tsumundev.gundurability.config.DifficultyProfile;
+import com.tsumundev.gundurability.util.DifficultyProfileManager;
 import com.tsumundev.gundurability.util.GunNBTUtil;
 import com.tacz.guns.item.ModernKineticGunItem;
 import net.minecraft.commands.CommandSourceStack;
@@ -36,6 +39,8 @@ public class TaczDurabilityAdminCommands {
             .then(restore())
             .then(listGuns())
 
+            .then(difficulty())
+
             .then(Commands.literal("debug")
                 .then(Commands.literal("jam")
                     .executes(ctx -> jamHeldGun(ctx.getSource()))
@@ -46,6 +51,47 @@ public class TaczDurabilityAdminCommands {
             );
 
         event.getDispatcher().register(root);
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> difficulty() {
+        return Commands.literal("difficulty")
+            .executes(ctx -> {
+                CommandSourceStack source = ctx.getSource();
+                source.sendSuccess(() -> Component.literal("§6=== Profils de Difficulté ==="), false);
+                source.sendSuccess(() -> Component.literal("§eProfil actuel: §f" + DifficultyProfileManager.getCurrentProfileName().getString()), false);
+                source.sendSuccess(() -> Component.literal(""), false);
+                source.sendSuccess(() -> Component.literal("§7Profils disponibles:"), false);
+                for (DifficultyProfile profile : DifficultyProfile.values()) {
+                    source.sendSuccess(() -> Component.literal("  §e" + profile.id() + " §7- " + profile.displayName().getString()), false);
+                }
+                source.sendSuccess(() -> Component.literal(""), false);
+                source.sendSuccess(() -> Component.literal("§7Utilise: §e/taczd difficulty <profil>"), false);
+                return 1;
+            })
+            .then(Commands.argument("profile", StringArgumentType.word())
+                .suggests((ctx, builder) -> {
+                    for (DifficultyProfile profile : DifficultyProfile.values()) {
+                        builder.suggest(profile.id());
+                    }
+                    return builder.buildFuture();
+                })
+                .executes(ctx -> {
+                    CommandSourceStack source = ctx.getSource();
+                    String profileName = StringArgumentType.getString(ctx, "profile");
+                    DifficultyProfile profile = DifficultyProfile.fromId(profileName);
+
+                    DifficultyProfileManager.setDefaultProfile(profile);
+
+                    source.sendSuccess(() -> Component.literal("§aProfil de difficulté défini sur: §e" + profile.displayName().getString()), true);
+                    source.sendSuccess(() -> Component.literal("§7- jamChance: §f" + profile.jamChance()), false);
+                    source.sendSuccess(() -> Component.literal("§7- durabilityMultiplier: §fx" + profile.durabilityMultiplier()), false);
+                    source.sendSuccess(() -> Component.literal("§7- gunsBreak: §f" + profile.gunsBreak()), false);
+                    source.sendSuccess(() -> Component.literal("§7- gunPartsSystem: §f" + profile.gunPartsSystem()), false);
+                    source.sendSuccess(() -> Component.literal("§7- heatMultiplier: §fx" + profile.heatMultiplier()), false);
+
+                    return 1;
+                })
+            );
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> setDurability() {
