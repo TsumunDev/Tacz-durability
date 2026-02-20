@@ -1,0 +1,19 @@
+{
+  "item.gundurability.brass_brush": "Brosse en Laiton",
+  "item.gundurability.wd_40": "WD-40 [Huile de Silicone pour Armes]",
+  "effect.gundurability.checkingdurability": "Vérification de l'État",
+  "gamerule.gunbreak": "Cassure d'Arme",
+  "gamerule.gunbreak.description": "Les armes se cassent-elles à zéro durabilité",
+  "attribute.gundurability.handling": "Manipulation d'Arme",
+  "block.gundurability.repair_table": "Table de Réparation",
+  "gui.gundurability.repair_gui.button_apply_spraybrush": "Réparer",
+  "item_group.gundurability.tacz_durability": "TACZ Durabilité",
+  "item.gundurability.gun_barrel": "Canon d'Arme",
+  "item.gundurability.recoil_spring": "Ressort de Recul",
+  "item.gundurability.gun_bolt": "Mécanisme de Culasse",
+  "subtitles.jamsfx": "Arme Enrayée",
+  "tooltip.gundurability.repair": "Réparation : ",
+  "tooltip.gundurability.max": "Max : ",
+  "tooltip.gundurability.min": "Min : ",
+  "tooltip.gundurability.guns": "Compatible Avec : "
+}

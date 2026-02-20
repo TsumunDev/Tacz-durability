@@ -1,0 +1,3 @@
+Rajouter un petit bruit quand ça jammed 
+Traduire le mods en français 
+Rendre les animations un chouia plus lente et genre voir si on peut pas s'arreter plus sur quand il ouvre le chargeur 
