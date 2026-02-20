@@ -10,6 +10,10 @@ public final class GunNBTUtil {
     public static final String KEY_GUN_ID = "GunId";
     public static final String KEY_JAMMED = "Jammed";
     public static final String KEY_FIRE_MODE = "GunFireMode";
+    public static final String KEY_WETNESS = "GunWetness";
+    public static final String KEY_LAST_RAIN_TICK = "LastRainTick";
+    public static final String KEY_UNJAM_PROGRESS = "UnjamProgress";
+    public static final String KEY_UNJAM_REQUIRED = "UnjamRequired";
     public static final String FIRE_MODE_BURST = "BURST";
     public static final String FIRE_MODE_AUTO = "AUTO";
 
@@ -77,6 +81,58 @@ public final class GunNBTUtil {
         setJammed(stack, false);
     }
 
+    // ===== Système de checkup multiple pour désenrayage =====
+
+    public static int getUnjamProgress(ItemStack stack) {
+        return getTag(stack).getInt(KEY_UNJAM_PROGRESS);
+    }
+
+    public static void setUnjamProgress(ItemStack stack, int progress) {
+        getTag(stack).putInt(KEY_UNJAM_PROGRESS, Math.max(0, progress));
+    }
+
+    public static int getRequiredUnjam(ItemStack stack) {
+        return getTag(stack).getInt(KEY_UNJAM_REQUIRED);
+    }
+
+    public static void setRequiredUnjam(ItemStack stack, int required) {
+        getTag(stack).putInt(KEY_UNJAM_REQUIRED, Math.max(1, required));
+    }
+
+    public static void incrementUnjamProgress(ItemStack stack) {
+        int current = getUnjamProgress(stack);
+        int required = getRequiredUnjam(stack);
+        setUnjamProgress(stack, current + 1);
+        if (current + 1 >= required) {
+            unjam(stack);
+            setUnjamProgress(stack, 0);
+            setRequiredUnjam(stack, 1);
+        }
+    }
+
+    public static boolean needsMoreUnjam(ItemStack stack) {
+        return isJammed(stack) && getUnjamProgress(stack) < getRequiredUnjam(stack);
+    }
+
+    public static void setupUnjamRequirements(ItemStack stack) {
+        double durabilityPercent = getDurabilityPercent(stack);
+        int required;
+
+        // Plus l'arme est usée, plus il faut de checkups
+        if (durabilityPercent > 0.7) {
+            required = 2;  // Bon état: 2 checkups
+        } else if (durabilityPercent > 0.4) {
+            required = 3;  // Usée: 3 checkups
+        } else if (durabilityPercent > 0.2) {
+            required = 4;  // Très usée: 4 checkups
+        } else {
+            required = 5;  // Critique: 5 checkups
+        }
+
+        setRequiredUnjam(stack, required);
+        setUnjamProgress(stack, 0);
+    }
+
     public static String getFireMode(ItemStack stack) {
         return getTag(stack).getString(KEY_FIRE_MODE);
     }
@@ -107,5 +163,48 @@ public final class GunNBTUtil {
 
     public static boolean isBroken(ItemStack stack) {
         return getDurability(stack) <= 0;
+    }
+
+    // ===== Système d'humidité =====
+
+    public static double getWetness(ItemStack stack) {
+        return getTag(stack).getDouble(KEY_WETNESS);
+    }
+
+    public static void setWetness(ItemStack stack, double wetness) {
+        getTag(stack).putDouble(KEY_WETNESS, Math.max(0.0, Math.min(1.0, wetness)));
+    }
+
+    public static void addWetness(ItemStack stack, double amount) {
+        setWetness(stack, getWetness(stack) + amount);
+    }
+
+    public static boolean isWet(ItemStack stack) {
+        return getWetness(stack) > 0.1;
+    }
+
+    public static boolean isVeryWet(ItemStack stack) {
+        return getWetness(stack) > 0.5;
+    }
+
+    public static boolean isSoaked(ItemStack stack) {
+        return getWetness(stack) > 0.8;
+    }
+
+    public static long getLastRainTick(ItemStack stack) {
+        return getTag(stack).getLong(KEY_LAST_RAIN_TICK);
+    }
+
+    public static void setLastRainTick(ItemStack stack, long tick) {
+        getTag(stack).putLong(KEY_LAST_RAIN_TICK, tick);
+    }
+
+    public static String getWetnessState(ItemStack stack) {
+        double wetness = getWetness(stack);
+        if (wetness <= 0.05) return "Sèche";
+        if (wetness <= 0.2) return "Légèrement humide";
+        if (wetness <= 0.5) return "Humide";
+        if (wetness <= 0.8) return "Très humide";
+        return "Détrempée";
     }
 }

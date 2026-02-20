@@ -144,7 +144,12 @@ public class TaczEvents {
         }
 
         double biomeModifier = getBiomeModifier(shooter);
-        double totalModifier = gunModifier * biomeModifier;
+
+        // Ajouter le multiplicateur d'humidité persistante de l'arme
+        ItemStack gunStack = shooter.getMainHandItem();
+        double wetnessModifier = getWetnessModifier(gunStack);
+
+        double totalModifier = gunModifier * biomeModifier * wetnessModifier;
 
         float damage;
         if (modeData.isAuto) {
@@ -238,6 +243,10 @@ public class TaczEvents {
             tag.putBoolean(GunNBTUtil.KEY_JAMMED, true);
             DELAYED_SOUNDS.add(new DelayedSound(shooter, 2, false));
 
+            // Initialiser les requirements de checkup multiple
+            ItemStack gunStack = shooter.getMainHandItem();
+            GunNBTUtil.setupUnjamRequirements(gunStack);
+
             if (shooter instanceof Player player && Config.SHOW_IMMERSIVE_MESSAGES.get()) {
                 player.displayClientMessage(MSG_JAMMED, true);
             }
@@ -329,6 +338,13 @@ public class TaczEvents {
     private static int getJamTimeForGunId(String gunId) {
         Config.DurabilityModifier modifier = Config.getDurabilityModifier(gunId);
         return (modifier != null) ? modifier.jamTime() : GunDurabilityConstants.DEFAULT_UNJAM_TIME_TICKS;
+    }
+
+    private static double getWetnessModifier(ItemStack gunStack) {
+        double wetness = GunNBTUtil.getWetness(gunStack);
+        // Plus l'arme est mouillée, plus elle s'use vite
+        // 0% = 1.0x, 50% = 1.5x, 100% = 2.0x
+        return 1.0 + (wetness * 1.0);
     }
 
     private static final class FireModeData {
